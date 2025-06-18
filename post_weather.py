@@ -1,7 +1,7 @@
 import requests
 from datetime import datetime
 
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/XXX/YYY"  # ← 自分のWebhook URLに変更！
+DISCORD_WEBHOOK_URL = "https://discordapp.com/api/webhooks/1384711572873674782/w4HdJy_ol7xQN4JhbrEatjxlcmyV229MSJlHbDosW6uiXAb8lxPIZnNVx_bqN1IQK3fk"  # ← 自分のWebhook URLに変更！
 
 def get_image_url():
     today = datetime.utcnow().strftime('%Y%m%d')
