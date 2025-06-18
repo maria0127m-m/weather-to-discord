@@ -2,7 +2,7 @@ name: Post JMA Weather to Discord
 
 on:
   schedule:
-    - cron: '30 3 * * *'  # 日本時間12:30（UTC 3:30）
+    - cron: '30 3 * * *'  # JST 12:30
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
     - name: Set up Python
       uses: actions/setup-python@v4
