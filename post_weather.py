@@ -1,5 +1,6 @@
 import requests
 from pdf2image import convert_from_bytes
+from PIL import Image
 from datetime import datetime, timedelta
 import io
 
@@ -19,41 +20,60 @@ def get_asas_image():
     image_io.seek(0)
     return image_io
 
-# OLR + 200hPa流線GIF
-def get_olr_gif():
-    # JST（UTC+9）で2日前を取得 → UTCに直す必要なし（GIFはJSTベース）
+# OLR + 200hPa流線図（5日/10日/30日平均） → 縦に結合
+def get_olr_combo_image():
+    # JST基準で2日前の画像を取得
     jst_now = datetime.utcnow() + timedelta(hours=9)
-    target_date = jst_now - timedelta(days=2)  # ← JSTで2日前に変更！
+    target_date = jst_now - timedelta(days=2)
     date_str = target_date.strftime('%Y%m%d')
+    base_url = f"https://ds.data.jma.go.jp/tcc/tcc/products/clisys/anim/GIF/tp/anom/{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}"
+    
+    periods = ["5day", "10day", "30day"]
+    images = []
 
-    gif_url = f"https://ds.data.jma.go.jp/tcc/tcc/products/clisys/anim/GIF/tp/anom/{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}/5day/OlrPsiWaf_tp200hPa_{date_str}.gif"
+    for period in periods:
+        gif_url = f"{base_url}/{period}/OlrPsiWaf_tp200hPa_{date_str}.gif"
+        response = requests.get(gif_url)
+        if response.status_code != 200:
+            print(f"❌ {period} GIF取得失敗: {gif_url}")
+            return None
+        # GIFの1フレーム目をRGB画像に変換
+        img = Image.open(io.BytesIO(response.content)).convert("RGB")
+        images.append(img)
 
-    response = requests.get(gif_url)
-    if response.status_code == 200:
-        print(f"✅ OLR画像取得成功: {gif_url}")
-        return response
-    else:
-        print(f"❌ OLR画像取得失敗: {gif_url}")
-        return None
+    # 画像を縦に結合
+    total_height = sum(img.height for img in images)
+    max_width = max(img.width for img in images)
+    combined = Image.new("RGB", (max_width, total_height))
+    y = 0
+    for img in images:
+        combined.paste(img, (0, y))
+        y += img.height
 
+    output = io.BytesIO()
+    combined.save(output, format="PNG")
+    output.seek(0)
+    return output
 
-
-# Discord投稿
+# Discordへの投稿
 def post_to_discord():
     asas_img = get_asas_image()
-    olr_gif = get_olr_gif()
+    olr_img = get_olr_combo_image()
 
-    if not (asas_img and olr_gif):
-        print("❌ いずれかの画像取得に失敗")
+    if not (asas_img and olr_img):
+        print("❌ 画像取得に失敗")
         return
 
     files = {
         "file1": ("ASAS_COLOR.png", asas_img, "image/png"),
-        "file2": ("olr_psi.gif", olr_gif.content, "image/gif")
+        "file2": ("OLR_combo.png", olr_img, "image/png")
     }
 
+    jst_now = datetime.utcnow() + timedelta(hours=9)
+    post_time = jst_now.strftime('%Y-%m-%d %H:%M JST')
+
     data = {
-        "content": "🗾 地上天気図 + 🌏 OLR+200hPa流線図（5日平均）"
+        "content": f"🗾 地上天気図 + 🌏 OLR+200hPa流線図（5/10/30日平均結合）\n🕒 {post_time}"
     }
 
     response = requests.post(DISCORD_WEBHOOK_URL, data=data, files=files)
