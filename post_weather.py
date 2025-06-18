@@ -1,6 +1,6 @@
 import requests
 from pdf2image import convert_from_bytes
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime, timedelta
 import io
 
@@ -27,18 +27,28 @@ def get_olr_combo_image():
     target_date = jst_now - timedelta(days=2)
     date_str = target_date.strftime('%Y%m%d')
     base_url = f"https://ds.data.jma.go.jp/tcc/tcc/products/clisys/anim/GIF/tp/anom/{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}"
-    
-    periods = ["5day", "10day", "30day"]
+
+    periods = [("5日平均", "5day"), ("10日平均", "10day"), ("30日平均", "30day")]
     images = []
 
-    for period in periods:
+    for label, period in periods:
         gif_url = f"{base_url}/{period}/OlrPsiWaf_tp200hPa_{date_str}.gif"
         response = requests.get(gif_url)
         if response.status_code != 200:
             print(f"❌ {period} GIF取得失敗: {gif_url}")
             return None
-        # GIFの1フレーム目をRGB画像に変換
+
         img = Image.open(io.BytesIO(response.content)).convert("RGB")
+
+        # ラベル描画
+        draw = ImageDraw.Draw(img)
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
+        except:
+            font = ImageFont.load_default()
+
+        # テキスト位置：左上 (20, 20)
+        draw.text((20, 20), label, fill="white", font=font, stroke_width=2, stroke_fill="black")
         images.append(img)
 
     # 画像を縦に結合
