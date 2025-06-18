@@ -48,7 +48,7 @@ def get_olr_combo_image():
             font = ImageFont.load_default()
 
         # テキスト位置：左上 (20, 20)
-        draw.text((30, 10), label, fill="white", font=font, stroke_width=2, stroke_fill="black")
+        draw.text((50, 10), label, fill="white", font=font, stroke_width=2, stroke_fill="black")
         images.append(img)
 
     # 画像を縦に結合
