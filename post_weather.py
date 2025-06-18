@@ -6,54 +6,49 @@ import io
 # ✅ あなたの Discord Webhook URL をここに貼ってください
 DISCORD_WEBHOOK_URL = "https://discordapp.com/api/webhooks/1384711572873674782/w4HdJy_ol7xQN4JhbrEatjxlcmyV229MSJlHbDosW6uiXAb8lxPIZnNVx_bqN1IQK3fk"  # ← 自分のWebhook URLに変更！
 
-# 地上天気図（ASAS）の画像取得・変換
+# 地上天気図（PDF → PNG）
 def get_asas_image():
     pdf_url = "https://www.data.jma.go.jp/yoho/data/wxchart/quick/ASAS_COLOR.pdf"
     response = requests.get(pdf_url)
-
     if response.status_code != 200:
-        print(f"❌ PDF取得失敗: {pdf_url}")
+        print("❌ ASAS PDF取得失敗")
         return None
-
-    # PDF → PNG（1ページ目のみ）
     images = convert_from_bytes(response.content, first_page=1, last_page=1, poppler_path="/usr/bin")
     image_io = io.BytesIO()
     images[0].save(image_io, format='PNG')
     image_io.seek(0)
     return image_io
 
-# ひまわり衛星画像（RGB PNG）のURL生成
-def get_himawari_url():
-    now = datetime.utcnow() - timedelta(hours=1)  # 1時間前が安定
-    timestamp = now.strftime("%Y%m%d%H0000")
-    return f"https://www.jma.go.jp/bosai/himawari/data/satimg/{timestamp}_00_RGB_PNH.png"
+# OLR + 200hPa流線GIF
+def get_olr_gif():
+    date = (datetime.utcnow() - timedelta(days=1)).strftime('%Y%m%d')
+    gif_url = f"https://ds.data.jma.go.jp/tcc/tcc/products/clisys/anim/GIF/tp/anom/{date[:4]}/{date[4:6]}/{date[6:]}/5day/OlrPsiWaf_tp200hPa_{date}.gif"
+    response = requests.get(gif_url)
+    return response if response.status_code == 200 else None
 
-# Discordへ投稿（画像2枚）
+# Discord投稿
 def post_to_discord():
-    asas_image = get_asas_image()
-    himawari_url = get_himawari_url()
-    himawari_response = requests.get(himawari_url)
+    asas_img = get_asas_image()
+    olr_gif = get_olr_gif()
 
-    if asas_image is None or himawari_response.status_code != 200:
-        print("❌ いずれかの画像取得に失敗しました")
+    if not (asas_img and olr_gif):
+        print("❌ いずれかの画像取得に失敗")
         return
 
     files = {
-        "file1": ("ASAS_COLOR.png", asas_image, "image/png"),
-        "file2": ("himawari.png", himawari_response.content, "image/png")
+        "file1": ("ASAS_COLOR.png", asas_img, "image/png"),
+        "file2": ("olr_psi.gif", olr_gif.content, "image/gif")
     }
 
     data = {
-        "content": "🗾 **最新の地上天気図** ＋ 🛰️ **ひまわり衛星画像**（気象庁）"
+        "content": "🗾 地上天気図 + 🌏 OLR+200hPa流線図（5日平均）"
     }
 
-    post_response = requests.post(DISCORD_WEBHOOK_URL, data=data, files=files)
-
-    if post_response.status_code == 204:
-        print("✅ 2枚投稿成功")
+    response = requests.post(DISCORD_WEBHOOK_URL, data=data, files=files)
+    if response.status_code == 204:
+        print("✅ 投稿成功")
     else:
-        print(f"⚠ 投稿失敗: {post_response.status_code}, {post_response.text}")
+        print(f"⚠ 投稿失敗: {response.status_code}, {response.text}")
 
 if __name__ == "__main__":
     post_to_discord()
-
