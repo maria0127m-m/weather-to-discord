@@ -22,3 +22,6 @@ jobs:
 
     - name: Run script
       run: python post_weather.py
+      
+    - name: Install Poppler
+      run: sudo apt-get install -y poppler-utils
