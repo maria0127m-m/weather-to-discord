@@ -14,7 +14,13 @@ def post_asas_image_to_discord():
         return
 
     # PDF → PNG 変換（1ページ目のみ）
-    images = convert_from_bytes(response.content, first_page=1, last_page=1)
+    images = convert_from_bytes(
+    response.content,
+    first_page=1,
+    last_page=1,
+    poppler_path="/usr/bin"  # ★ これを追加！
+)
+
     image_io = io.BytesIO()
     images[0].save(image_io, format='PNG')
     image_io.seek(0)
