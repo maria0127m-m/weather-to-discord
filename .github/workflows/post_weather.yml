@@ -21,6 +21,9 @@ jobs:
     - name: Install Poppler
       run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
+    - name: Install Japanese font 
+      run: sudo apt-get install -y fonts-noto-cjk
+
     - name: Install dependencies
       run: pip install -r requirements.txt
 
