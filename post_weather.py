@@ -21,10 +21,18 @@ def get_asas_image():
 
 # OLR + 200hPa流線GIF
 def get_olr_gif():
-    date = (datetime.utcnow() - timedelta(days=1)).strftime('%Y%m%d')
-    gif_url = f"https://ds.data.jma.go.jp/tcc/tcc/products/clisys/anim/GIF/tp/anom/{date[:4]}/{date[4:6]}/{date[6:]}/5day/OlrPsiWaf_tp200hPa_{date}.gif"
+    # JST基準で1日前の日付を取得（UTCに直す）
+    jst_now = datetime.utcnow() + timedelta(hours=9)
+    target_date = jst_now - timedelta(days=1)
+    date_str = target_date.strftime('%Y%m%d')
+    gif_url = f"https://ds.data.jma.go.jp/tcc/tcc/products/clisys/anim/GIF/tp/anom/{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}/5day/OlrPsiWaf_tp200hPa_{date_str}.gif"
     response = requests.get(gif_url)
-    return response if response.status_code == 200 else None
+    if response.status_code == 200:
+        return response
+    else:
+        print(f"❌ OLR画像取得失敗: {gif_url}")
+        return None
+
 
 # Discord投稿
 def post_to_discord():
