@@ -43,7 +43,7 @@ def get_olr_combo_image():
         # ラベル描画
         draw = ImageDraw.Draw(img)
         try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)
+            font = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 36)
         except:
             font = ImageFont.load_default()
 
